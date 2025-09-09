@@ -423,7 +423,7 @@ optional arguments:
         pass
 ```
 
-#### `BLANK_LINES_BEFORE_CLASS_DEFS`
+#### `BLANK_LINES_BETWEEN_CLASS_DEFS`
 
 >    Sets the number of desired blank lines between methods inside
 >    class definitions. For example:
