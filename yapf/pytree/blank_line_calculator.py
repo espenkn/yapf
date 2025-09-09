@@ -68,9 +68,9 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
     self.DefaultNodeVisit(node)
     if node.children[0].type == grammar_token.COMMENT:
       self.last_comment_lineno = node.children[0].lineno
+    else:
       # Do NOT set _prev_stmt on pure comment lines; keep the last real stmt.
-      return
-    self._prev_stmt = node
+      self._prev_stmt = node
 
   def Visit_decorator(self, node):  # pylint: disable=invalid-name
      # If this decorator begins a decorated method, apply your spacing rule.
