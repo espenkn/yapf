@@ -167,9 +167,6 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
       # Only between consecutive methods *in the same class*.
       # Keep at least one blank line as a floor (to avoid 0 if user misconfigures).
       return max(_ONE_BLANK_LINE, style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS'))
-    elif self._Is(node):
-      return _ONE_BLANK_LINE
-    # Fallback: no extra spacing
     return _NO_BLANK_LINES
 
   def _IsTopLevel(self, node):
@@ -190,16 +187,34 @@ def _StartsInZerothColumn(node):
 def _AsyncFunction(node):
   return (node.prev_sibling and node.prev_sibling.type == grammar_token.ASYNC)
 
-# Helper: are two nodes methods in the same class?
+
 def _methods_in_same_class(prev_node, curr_node):
-  # Find the enclosing classdef node for each statement (if any).
-  prev_class = pytree_utils.GetEnclosingNode(prev_node, pytree_utils.NodeType.CLASSDEF)
-  curr_class = pytree_utils.GetEnclosingNode(curr_node, pytree_utils.NodeType.CLASSDEF)
-  if prev_class is None or curr_class is None or prev_class is not curr_class:
+  """
+  True if both nodes are function defs inside the same class.
+  """
+
+  def _is_funcdef(n):
+    return n is not None and pytree_utils.NodeName(n) == 'funcdef'
+
+  def _ascend_to(node, target_name):
+    """
+    Ascend parents until NodeName == target_name; return node or None.
+    """
+    n = node
+    while n is not None and pytree_utils.NodeName(n) != target_name:
+      n = getattr(n, 'parent', None)
+    return n if n is not None and pytree_utils.NodeName(n) == target_name else None
+
+  # Ensure we’re comparing actual funcdef nodes.
+  prev_func = prev_node if _is_funcdef(prev_node) else _ascend_to(prev_node, 'funcdef')
+  curr_func = curr_node if _is_funcdef(curr_node) else _ascend_to(curr_node, 'funcdef')
+  if not (_is_funcdef(prev_func) and _is_funcdef(curr_func)):
     return False
-  # Make sure each statement is a function (method) definition.
-  return (pytree_utils.NodeName(prev_node) == 'funcdef' and
-          pytree_utils.NodeName(curr_node) == 'funcdef')
+
+  # Find each function's enclosing classdef (if any).
+  prev_class = _ascend_to(prev_func.parent, 'classdef')
+  curr_class = _ascend_to(curr_func.parent, 'classdef')
+  return prev_class is not None and prev_class is curr_class
 
 
 def _decorated_funcdef(node):
