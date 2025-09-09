@@ -692,12 +692,6 @@ def _CalculateNumberOfNewlines(first_token, indent_depth, prev_line,
           if first_token.newlines is not None:
             first_token.newlines = None
           return NO_BLANK_LINES
-        # else:
-        #   # This is after any non-top level but still defs????????
-        #   ######## FIXME: ESPEN:
-        #   print("Do i even get here!!!!!!!!!")
-        #   prev_last_token.AdjustNewlinesBefore(
-        #           style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS'))
     elif _IsClassOrDef(prev_line.first):
       if first_nested and not style.Get(
           'BLANK_LINE_BEFORE_NESTED_CLASS_OR_DEF'):
