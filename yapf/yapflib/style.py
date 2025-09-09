@@ -115,6 +115,18 @@ _STYLE_HELP = dict(
           def method():
             pass
     """),
+    BLANK_LINES_BEFORE_CLASS_DEFS=textwrap.dedent("""\
+      Sets the number of desired blank lines between methods inside
+      class definitions. For example:
+
+        class Foo:
+          def method1():
+            pass
+                           # <------ multiple
+                           # <------ blank lines
+          def method2():
+            pass
+    """),
     BLANK_LINES_AROUND_TOP_LEVEL_DEFINITION=textwrap.dedent("""\
       Number of blank lines surrounding top-level function and class
       definitions.
