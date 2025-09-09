@@ -1,3 +1,2 @@
 [style]
 based_on_style = yapf
-blank_lines_between_class_defs = 5
