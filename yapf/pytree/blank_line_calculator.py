@@ -73,9 +73,13 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
       self._prev_stmt = node
 
   def Visit_decorator(self, node):  # pylint: disable=invalid-name
-     # If this decorator begins a decorated method, apply your spacing rule.
     func = _decorated_funcdef(node)
-    if func is not None and self._prev_stmt is not None and _methods_in_same_class(self._prev_stmt, func):
+    if (self.last_comment_lineno and
+        self.last_comment_lineno == node.children[0].lineno - 1):
+      _SetNumNewlines(node.children[0], _NO_BLANK_LINES)
+    elif self.last_was_decorator:
+      _SetNumNewlines(node.children[0], _NO_BLANK_LINES)
+    elif func is not None and self._prev_stmt is not None and _methods_in_same_class(self._prev_stmt, func):
       _SetNumNewlines(node.children[0], max(_ONE_BLANK_LINE, 1 + style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS')))
     else:
       _SetNumNewlines(node.children[0], self._GetNumNewlines(node))
