@@ -76,7 +76,7 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
      # If this decorator begins a decorated method, apply your spacing rule.
     func = _decorated_funcdef(node)
     if func is not None and self._prev_stmt is not None and _methods_in_same_class(self._prev_stmt, func):
-      _SetNumNewlines(node.children[0], max(_ONE_BLANK_LINE, style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS')))
+      _SetNumNewlines(node.children[0], max(_ONE_BLANK_LINE, 1 + style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS')))
     else:
       _SetNumNewlines(node.children[0], self._GetNumNewlines(node))
     for child in node.children:
@@ -166,7 +166,7 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
     elif self._prev_stmt is not None and _methods_in_same_class(self._prev_stmt, node):
       # Only between consecutive methods *in the same class*.
       # Keep at least one blank line as a floor (to avoid 0 if user misconfigures).
-      return max(_ONE_BLANK_LINE, style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS'))
+      return max(_ONE_BLANK_LINE, 1 + style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS'))
     return _NO_BLANK_LINES
 
   def _IsTopLevel(self, node):
@@ -187,7 +187,7 @@ def _StartsInZerothColumn(node):
 def _AsyncFunction(node):
   return (node.prev_sibling and node.prev_sibling.type == grammar_token.ASYNC)
 
-
+######## FIXME: ESPEN:
 def _methods_in_same_class(prev_node, curr_node):
   """
   True if both nodes are function defs inside the same class.
