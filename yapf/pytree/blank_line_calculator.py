@@ -62,16 +62,21 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
     self.last_comment_lineno = 0
     self.last_was_decorator = False
     self.last_was_class_or_function = False
+    self._prev_stmt = None
 
   def Visit_simple_stmt(self, node):  # pylint: disable=invalid-name
     self.DefaultNodeVisit(node)
     if node.children[0].type == grammar_token.COMMENT:
       self.last_comment_lineno = node.children[0].lineno
+      # Do NOT set _prev_stmt on pure comment lines; keep the last real stmt.
+      return
+    self._prev_stmt = node
 
   def Visit_decorator(self, node):  # pylint: disable=invalid-name
-    if (self.last_comment_lineno and
-        self.last_comment_lineno == node.children[0].lineno - 1):
-      _SetNumNewlines(node.children[0], _NO_BLANK_LINES)
+     # If this decorator begins a decorated method, apply your spacing rule.
+    func = _decorated_funcdef(node)
+    if func is not None and self._prev_stmt is not None and _methods_in_same_class(self._prev_stmt, func):
+      _SetNumNewlines(node.children[0], max(_ONE_BLANK_LINE, style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS')))
     else:
       _SetNumNewlines(node.children[0], self._GetNumNewlines(node))
     for child in node.children:
@@ -87,6 +92,7 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
       self.Visit(child)
     self.class_level -= 1
     self.last_was_class_or_function = True
+    self._prev_stmt = node
 
   def Visit_funcdef(self, node):  # pylint: disable=invalid-name
     self.last_was_class_or_function = False
@@ -103,6 +109,7 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
       self.Visit(child)
     self.function_level -= 1
     self.last_was_class_or_function = True
+    self._prev_stmt = node
 
   def DefaultNodeVisit(self, node):
     """Override the default visitor for Node.
@@ -162,6 +169,8 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
       return max(_ONE_BLANK_LINE, style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS'))
     elif self._Is(node):
       return _ONE_BLANK_LINE
+    # Fallback: no extra spacing
+    return _NO_BLANK_LINES
 
   def _IsTopLevel(self, node):
     return (not (self.class_level or self.function_level) and
@@ -191,3 +200,15 @@ def _methods_in_same_class(prev_node, curr_node):
   # Make sure each statement is a function (method) definition.
   return (pytree_utils.NodeName(prev_node) == 'funcdef' and
           pytree_utils.NodeName(curr_node) == 'funcdef')
+
+
+def _decorated_funcdef(node):
+  """Given a decorator node, return the funcdef it decorates (if any)."""
+  n = node
+  # The decorator may be followed by more decorators; walk to the funcdef.
+  while n.next_sibling is not None and pytree_utils.NodeName(n.next_sibling) == 'decorator':
+    n = n.next_sibling
+  n = n.next_sibling
+  if n is not None and pytree_utils.NodeName(n) == 'funcdef':
+    return n
+  return None
