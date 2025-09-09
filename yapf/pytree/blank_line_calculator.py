@@ -156,7 +156,12 @@ class _BlankLineCalculator(pytree_visitor.PyTreeVisitor):
       return _NO_BLANK_LINES
     elif self._IsTopLevel(node):
       return 1 + style.Get('BLANK_LINES_AROUND_TOP_LEVEL_DEFINITION')
-    return _ONE_BLANK_LINE
+    elif self._prev_stmt is not None and _methods_in_same_class(self._prev_stmt, node):
+      # Only between consecutive methods *in the same class*.
+      # Keep at least one blank line as a floor (to avoid 0 if user misconfigures).
+      return max(_ONE_BLANK_LINE, style.Get('BLANK_LINES_BETWEEN_CLASS_DEFS'))
+    elif self._Is(node):
+      return _ONE_BLANK_LINE
 
   def _IsTopLevel(self, node):
     return (not (self.class_level or self.function_level) and
@@ -175,3 +180,14 @@ def _StartsInZerothColumn(node):
 
 def _AsyncFunction(node):
   return (node.prev_sibling and node.prev_sibling.type == grammar_token.ASYNC)
+
+# Helper: are two nodes methods in the same class?
+def _methods_in_same_class(prev_node, curr_node):
+  # Find the enclosing classdef node for each statement (if any).
+  prev_class = pytree_utils.GetEnclosingNode(prev_node, pytree_utils.NodeType.CLASSDEF)
+  curr_class = pytree_utils.GetEnclosingNode(curr_node, pytree_utils.NodeType.CLASSDEF)
+  if prev_class is None or curr_class is None or prev_class is not curr_class:
+    return False
+  # Make sure each statement is a function (method) definition.
+  return (pytree_utils.NodeName(prev_node) == 'funcdef' and
+          pytree_utils.NodeName(curr_node) == 'funcdef')
